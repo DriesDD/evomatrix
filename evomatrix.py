@@ -4,9 +4,9 @@ import sched, time, random
 g_cols, g_rows = 50,50
 g_alive  = [[False for x in range(g_cols)] for y in range(g_rows)]
 g_energy = [[0 for x in range(g_cols)] for y in range(g_rows)]
-g_motion = [[2 for x in range(g_cols)] for y in range(g_rows)]
+g_motion = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
 g_diet   = [[0 for x in range(g_cols)] for y in range(g_rows)]
-tps = 30
+tps = 5
 
 root = grid.Tk()
 
@@ -25,8 +25,9 @@ def draw_grid(): #draws every cell
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y] == True:
+                trim = (cs-(cs*pow(g_energy[x][y],2)))/2
                 cellcolor = '#' + floattohex(g_energy[x][y]) + floattohex(g_energy[x][y]) + floattohex(g_energy[x][y])
-                c.create_rectangle(x*cs,y*cs,x*cs+cs,y*cs+cs,fill=cellcolor, tag='cell')
+                c.create_rectangle(x*cs+trim,y*cs+trim,x*cs+cs-trim,y*cs+cs-trim,fill=cellcolor, tag='cell')
 
 def step_grid(): #calculations for behavior of every cell
     for x in range(0, g_cols):
@@ -42,21 +43,22 @@ def step_grid(): #calculations for behavior of every cell
                 #growth and learning
                 g_energy[x][y] += 0.1 * (1 - g_diet[x][y])
                 #fighting each other (and moving)
-                if random.random() < g_motion[x][y] ** 2:
-                    pick = random.choice(NEIGHBOURLIST)
-                    if g_alive[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] == False:
-                        g_alive[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = True
-                        g_energy[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = g_energy[x][y] - 0.05
-                        g_diet[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = g_diet[x][y]
-                        g_motion[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = g_motion[x][y]
-                        g_alive[x][y] = False
-                #middle age]
-                if g_energy[x][y] > 1:
-                    g_energy[x][y] = 1
+                if g_energy[x][y] > 0.1:
+                    if random.random() < g_motion[x][y] ** 2:
+                        pick = random.choice(NEIGHBOURLIST)
+                        if g_alive[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] == False:
+                            g_alive[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = True
+                            g_energy[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = g_energy[x][y] - 0.1
+                            g_diet[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = g_diet[x][y]
+                            g_motion[int(x+pick[0]) % g_cols][int(y+pick[1]) % g_rows] = g_motion[x][y]
+                            g_alive[x][y] = False
+                #middle age
                 #live organ transplants
                 #the autumn years
                 g_energy[x][y] -= 0.05
                 #death
+                if g_energy[x][y] > 1:
+                    g_energy[x][y] = 1
                 if g_energy[x][y] < 0:
                     g_alive[x][y] = False
     root.after(1000/tps, step_grid)
