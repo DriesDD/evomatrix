@@ -1,16 +1,16 @@
-import Tkinter as grid
+import Tkinter
 import sched, time, random, math
 
 g_cols, g_rows = 50,50
 g_alive  = [[False for x in range(g_cols)] for y in range(g_rows)]
 g_energy = [[0 for x in range(g_cols)] for y in range(g_rows)]
-g_motion = [[0.1 for x in range(g_cols)] for y in range(g_rows)]
-g_diet   = [[0.1 for x in range(g_cols)] for y in range(g_rows)]
-g_power   = [[0.1 for x in range(g_cols)] for y in range(g_rows)]
-tps = 40
-fps = 20
+g_motion = [[0.3 for x in range(g_cols)] for y in range(g_rows)]
+g_diet   = [[0.3 for x in range(g_cols)] for y in range(g_rows)]
+g_power   = [[0.3 for x in range(g_cols)] for y in range(g_rows)]
+tps = 500
+fps = 10
 
-root = grid.Tk()
+root = Tkinter.Tk()
 
 g_alive[int(g_cols/2)][int(g_rows/2)] = True
 g_energy[int(g_cols/2)][int(g_rows/2)] = 0.8
@@ -46,10 +46,10 @@ def step_grid(): #calculations for behavior of every cell
                     pick = random.choice(NEIGHBOURLIST)
                     ox = int(x+pick[0]) % g_cols
                     oy = int(y+pick[1]) % g_rows
-                    if random.random() < g_motion[x][y] ** 2:
+                    if random.random() < g_motion[x][y]:
                         if g_alive[ox][oy] == False: #movement
                             g_alive[ox][oy] = True
-                            g_energy[ox][oy] = g_energy[x][y] - 0.1
+                            g_energy[ox][oy] = g_energy[x][y] - 0.05
                             g_diet[ox][oy] = g_diet[x][y]
                             g_motion[ox][oy] = g_motion[x][y]
                             g_alive[x][y] = False
@@ -91,7 +91,7 @@ def step_grid(): #calculations for behavior of every cell
 root.after(0, step_grid)
 root.after(0, draw_grid)
 
-c = grid.Canvas(root, height=1000, width=1000, bg='#000')
-c.pack(fill=grid.BOTH, expand=True)
+c = Tkinter.Canvas(root, height=1000, width=1000, bg='#000')
+c.pack(fill=Tkinter.BOTH, expand=True)
 c.bind(draw_grid)
 root.mainloop()
