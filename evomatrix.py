@@ -7,8 +7,8 @@ g_energy  = [[0 for x in range(g_cols)] for y in range(g_rows)]
 g_motion  = [[0.5 for x in range(g_cols)] for y in range(g_rows)]
 g_diet    = [[0.8 for x in range(g_cols)] for y in range(g_rows)]
 g_power   = [[0.5 for x in range(g_cols)] for y in range(g_rows)]
-tps = 500
-fps = 20
+tps = 30
+fps = 30
 
 root = Tkinter.Tk()
 
@@ -30,7 +30,7 @@ def draw_grid(): #draws every cell
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y] == True:
-                trim = (cs-(cs*pow(g_energy[x][y],2)))/2
+                trim = (cs-(cs*math.sqrt(g_energy[x][y])))/2
                 cellcolor = '#' + floattohex(g_power[x][y]) + floattohex(g_diet[x][y]) + floattohex(g_motion[x][y])
                 c.create_rectangle(x*cs+trim,y*cs+trim,x*cs+cs-trim,y*cs+cs-trim,fill=cellcolor, tag='cell')
     root.after(1000/fps, draw_grid)
