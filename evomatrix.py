@@ -7,8 +7,8 @@ g_energy  = [[0 for x in range(g_cols)] for y in range(g_rows)]
 g_motion  = [[0.5 for x in range(g_cols)] for y in range(g_rows)]
 g_diet    = [[0.8 for x in range(g_cols)] for y in range(g_rows)]
 g_power   = [[0.5 for x in range(g_cols)] for y in range(g_rows)]
-tps = 30
-fps = 30
+tps = 500
+fps = 1
 
 root = Tkinter.Tk()
 
@@ -19,23 +19,26 @@ NEIGHBOURLIST = [[+1,0],[+1,+1],[0,+1],[-1,+1],[-1,0],[-1,-1],[0,-1],[+1,-1]]
 def floattohex(input): #helper function to map numbers from 0 to 1 to hex values from 1 to f
     return str(hex(int(16*input-1)).split('x')[-1])
 
-def mutate(n):
-    return max(0, min(1, random.gauss(n,0.1)))
+def mutate(n,s):
+    return max(0, min(1, random.gauss(n,s)))
 
 def draw_grid(): #draws every cell
     w = c.winfo_width()
     h = c.winfo_height()
     cs = min(w/g_cols,h/g_rows)
     c.delete('cell')
+    c.delete('dot')
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y] == True:
                 trim = (cs-(cs*math.sqrt(g_energy[x][y])))/2
                 cellcolor = '#' + floattohex(g_power[x][y]) + floattohex(g_diet[x][y]) + floattohex(g_motion[x][y])
-                c.create_rectangle(x*cs+trim,y*cs+trim,x*cs+cs-trim,y*cs+cs-trim,fill=cellcolor, tag='cell')
+                c.create_rectangle(x*cs+trim,y*cs+trim,x*cs+cs-trim,y*cs+cs-trim,fill=cellcolor, outline='', tag='cell')
+                graphsize = (w-cs*g_cols)*2/3
+                c.create_rectangle(cs*g_cols+g_power[x][y]*graphsize+graphsize/2*g_motion[x][y],graphsize*1.5-g_diet[x][y]*graphsize-graphsize/2*g_motion[x][y],3+cs*g_cols+g_power[x][y]*graphsize+graphsize/2*g_motion[x][y],3+graphsize*1.5-g_diet[x][y]*graphsize-graphsize/2*g_motion[x][y],fill=cellcolor, outline='', tag='dot')
     root.after(1000/fps, draw_grid)
 
-def step_grid(): #calculations for behavior of every cell
+def step_grid(countdown): #calculations for behavior of every cell
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y]:
@@ -56,7 +59,7 @@ def step_grid(): #calculations for behavior of every cell
                             g_power[ox][oy] = g_power[x][y]
                             g_alive[x][y] = False
                             g_alive[ox][oy] = True
-                #fight and eat if moving to another cell
+                #fight and eat if moving to a live cell
                         else:
                             if g_energy[ox][oy] > 0.8*g_power[x][y]: 
                                 g_energy[ox][oy] -= 0.8*g_power[x][y]
@@ -81,18 +84,20 @@ def step_grid(): #calculations for behavior of every cell
                         if g_alive[ox][oy] == False:
                             g_alive[ox][oy] = True
                             g_energy[ox][oy] = 0.3
-                            g_diet[ox][oy]   = mutate(g_diet[x][y])
-                            g_motion[ox][oy] = mutate(g_motion[x][y])
-                            g_power[ox][oy]  = mutate(g_power[x][y])                   
+                            g_diet[ox][oy]   = mutate(g_diet[x][y],max(0.01,(countdown-5000)/50000))
+                            g_motion[ox][oy] = mutate(g_motion[x][y],max(0.01,(countdown-5000)/50000))
+                            g_power[ox][oy]  = mutate(g_power[x][y],max(0.01,(countdown-5000)/50000))                   
                             g_energy[x][y] -= 0.3
                 #death
                 if g_energy[x][y] > 1:
                     g_energy[x][y] = 1
                 if g_energy[x][y] < 0:
                     g_alive[x][y] = False
-    root.after(1000/tps, step_grid)
+    if countdown/1000 % 1 == 0:
+        print(str(countdown) +' steps to go. Mutation rate: ' + str(max(0.01,(countdown-5000)/50000)))
+    root.after(1000/tps, step_grid, countdown-1)
 
-root.after(0, step_grid)
+root.after(0, step_grid, 20000.0)
 root.after(0, draw_grid)
 
 c = Tkinter.Canvas(root, height=1000, width=1000, bg='#000')
