@@ -7,7 +7,8 @@ g_energy = [[0 for x in range(g_cols)] for y in range(g_rows)]
 g_motion = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
 g_diet   = [[0 for x in range(g_cols)] for y in range(g_rows)]
 g_power   = [[0 for x in range(g_cols)] for y in range(g_rows)]
-tps = 10
+tps = 100
+fps = 10
 
 root = grid.Tk()
 
@@ -32,6 +33,8 @@ def draw_grid(): #draws every cell
                 trim = (cs-(cs*pow(g_energy[x][y],2)))/2
                 cellcolor = '#' + floattohex(g_power[x][y]) + floattohex(1-1*g_diet[x][y]) + floattohex(g_motion[x][y])
                 c.create_rectangle(x*cs+trim,y*cs+trim,x*cs+cs-trim,y*cs+cs-trim,fill=cellcolor, tag='cell')
+    root.after(1000/fps, draw_grid)
+
 
 def step_grid(): #calculations for behavior of every cell
     for x in range(0, g_cols):
@@ -86,8 +89,9 @@ def step_grid(): #calculations for behavior of every cell
                 if g_energy[x][y] < 0:
                     g_alive[x][y] = False
     root.after(1000/tps, step_grid)
-    root.after(0, draw_grid)
+
 root.after(0, step_grid)
+root.after(0, draw_grid)
 
 c = grid.Canvas(root, height=1000, width=1000, bg='#000')
 c.pack(fill=grid.BOTH, expand=True)
