@@ -1,20 +1,37 @@
 import Tkinter
 import sched, time, random, math
 
-g_cols, g_rows = 50,50
+g_cols, g_rows = 20,20
 g_alive   = [[False for x in range(g_cols)] for y in range(g_rows)]
 g_energy  = [[0 for x in range(g_cols)] for y in range(g_rows)]
-g_motion  = [[0.5 for x in range(g_cols)] for y in range(g_rows)]
+g_motion  = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
 g_diet    = [[0.8 for x in range(g_cols)] for y in range(g_rows)]
-g_power   = [[0.5 for x in range(g_cols)] for y in range(g_rows)]
-tps = 500
-fps = 1
+g_power   = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
+tps = 60
+fps = 60
+laserbeam = False
+
 
 root = Tkinter.Tk()
 
 g_alive[int(g_cols/2)][int(g_rows/2)] = True
 g_energy[int(g_cols/2)][int(g_rows/2)] = 0.8
 NEIGHBOURLIST = [[+1,0],[+1,+1],[0,+1],[-1,+1],[-1,0],[-1,-1],[0,-1],[+1,-1]]
+
+def curve(num):
+    return (math.cos(math.pi+math.pi*num)/2 + 0.5)
+
+print(curve(0))
+print(curve(0.1))
+print(curve(0.2))
+print(curve(0.3))
+print(curve(0.4))
+print(curve(0.5))
+print(curve(0.6))
+print(curve(0.7))
+print(curve(0.8))
+print(curve(0.9))
+print(curve(1))
 
 def floattohex(input): #helper function to map numbers from 0 to 1 to hex values from 1 to f
     return str(hex(int(16*input-1)).split('x')[-1])
@@ -31,7 +48,7 @@ def draw_grid(): #draws every cell
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y] == True:
-                trim = (cs-(cs*math.sqrt(g_energy[x][y])))/2
+                trim = (cs-(cs*math.sqrt(max(0,g_energy[x][y]))))/2
                 cellcolor = '#' + floattohex(g_power[x][y]) + floattohex(g_diet[x][y]) + floattohex(g_motion[x][y])
                 c.create_rectangle(x*cs+trim,y*cs+trim,x*cs+cs-trim,y*cs+cs-trim,fill=cellcolor, outline='', tag='cell')
                 graphsize = (w-cs*g_cols)*2/3
@@ -41,19 +58,24 @@ def draw_grid(): #draws every cell
 def step_grid(countdown): #calculations for behavior of every cell
     for x in range(0, g_cols):
         for y in range(0, g_rows):
+            #laser beam
+            if laserbeam == True and x > g_cols/2 and int((countdown/20 % g_rows)/3) == int(y/3):
+                g_alive[x][y] = False
+
             if g_alive[x][y]:
                 #get energy from the sun
-                g_energy[x][y] += 0.1 * (g_diet[x][y])
+                g_energy[x][y] += 0.1 * curve(g_diet[x][y])
                 #lose energy
-                g_energy[x][y] -= (0.03+0.02*g_power[x][y])
+                g_energy[x][y] -= 0.08 * curve(g_power[x][y])
                 #movement
                 if g_energy[x][y] > 0.2:
                     pick = random.choice(NEIGHBOURLIST)
                     ox = int(x+pick[0]) % g_cols
                     oy = int(y+pick[1]) % g_rows
-                    if random.random() < g_motion[x][y]:
+                    if random.random() < curve(g_motion[x][y]):
+                        g_energy[x][y] -= 0.04
                         if g_alive[ox][oy] == False:
-                            g_energy[ox][oy] = min(1,(g_energy[x][y] - 0.03))
+                            g_energy[ox][oy] = g_energy[x][y]
                             g_diet[ox][oy] = g_diet[x][y]
                             g_motion[ox][oy] = g_motion[x][y]
                             g_power[ox][oy] = g_power[x][y]
@@ -61,21 +83,11 @@ def step_grid(countdown): #calculations for behavior of every cell
                             g_alive[ox][oy] = True
                 #fight and eat if moving to a live cell
                         else:
-                            if g_energy[ox][oy] > 0.8*g_power[x][y]: 
-                                g_energy[ox][oy] -= 0.8*g_power[x][y]
-                                g_energy[x][y] += 0.8*g_power[x][y] * (1-g_diet[x][y])
-                            else:
-                                g_energy[x][y] += g_energy[ox][oy] * (1-g_diet[x][y])
-                                g_alive[ox][oy] = False
-                            if g_alive[ox][oy] == True: #other fights back
-                                if g_energy[x][y] > 0.8*g_power[ox][oy]:
-                                    g_energy[x][y] -= 0.8*g_power[ox][oy]
-                                    g_energy[ox][oy] += 0.8*g_power[ox][oy] * (1-g_diet[ox][oy])
-                                else:
-                                    g_energy[ox][oy] += g_energy[x][y] * (1-g_diet[ox][oy])
-                                    g_alive[x][y] = False
-                                if g_energy[ox][oy] > 1:
-                                    g_energy[ox][oy] = 1
+                            if curve(g_power[x][y]) > curve(g_power[ox][oy])*0.6:
+                                if g_energy[ox][oy] < curve(g_power[x][y]) - 0.6*curve(g_power[ox][oy]):
+                                    g_alive[ox][oy] = False
+                                g_energy[ox][oy] -= curve(g_power[x][y]) - 0.6*curve(g_power[ox][oy])
+                                g_energy[x][y] += (curve(g_power[x][y]) - 0.6*curve(g_power[ox][oy])) * (1-curve(g_diet[x][y]))                                    
                 #reproduce
                     if g_energy[x][y] > 0.9:
                         pick = random.choice(NEIGHBOURLIST)
@@ -91,7 +103,7 @@ def step_grid(countdown): #calculations for behavior of every cell
                 #death
                 if g_energy[x][y] > 1:
                     g_energy[x][y] = 1
-                if g_energy[x][y] < 0:
+                if g_energy[x][y] <= 0:
                     g_alive[x][y] = False
     if countdown/1000 % 1 == 0:
         print(str(countdown) +' steps to go. Mutation rate: ' + str(max(0.01,(countdown-5000)/50000)))
