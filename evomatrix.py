@@ -1,16 +1,14 @@
 import Tkinter
 import sched, time, random, math
 
-g_cols, g_rows = 40,40
+g_cols, g_rows = 50,50
 g_alive   = [[False for x in range(g_cols)] for y in range(g_rows)]
 g_energy  = [[0 for x in range(g_cols)] for y in range(g_rows)]
 g_motion  = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
 g_diet    = [[0.8 for x in range(g_cols)] for y in range(g_rows)]
 g_power   = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
-tps = 30
-fps = 30
-laserbeam = False
-
+tps = 100
+fps = 3
 
 root = Tkinter.Tk()
 
@@ -25,8 +23,8 @@ def floattohex(input): #helper function to map numbers from 0 to 1 to hex values
     return str(hex(int(16*input-1)).split('x')[-1])
 
 def mutate(n,s):
-    if random.random() > 0.997:
-        return random.random()
+    if random.random() > 0.95:
+        return max(0, min(1, random.gauss(n,s*10)))
     return max(0, min(1, random.gauss(n,s)))
 
 def draw_grid(): #draws every cell
@@ -35,9 +33,25 @@ def draw_grid(): #draws every cell
     cs = min(w/g_cols,h/g_rows)
     c.delete('cell')
     c.delete('dot')
+    c.delete('line')
     length = 300
+    cos30 = math.cos(math.pi/6)
+    sin30 = math.sin(math.pi/6)
     centerx = cs*g_cols+length/2
-    centery = length/2
+    centery = h/2
+    c.create_line(centerx,centery,centerx,centery-length/2,fill="grey20",tag='line')
+    c.create_line(centerx,centery,centerx+cos30*length/2,centery+sin30*length/2,fill="grey20",tag='line')
+    c.create_line(centerx,centery,centerx-cos30*length/2,centery+sin30*length/2,fill="grey20",tag='line')
+
+    c.create_line(centerx-cos30*length/2,centery+sin30*length/2+1,centerx,centery+length/2,fill="red",tag='line')
+    c.create_line(centerx+cos30*length/2,centery+sin30*length/2,centerx,centery+length/2,fill="green",tag='line')
+
+    c.create_line(centerx-cos30*length/2,centery+sin30*length/2,centerx-cos30*length/2,centery-sin30*length/2,fill="red",tag='line')
+    c.create_line(centerx+cos30*length/2,centery+sin30*length/2,centerx+cos30*length/2,centery-sin30*length/2,fill="green",tag='line')
+
+    c.create_line(centerx-cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
+    c.create_line(centerx+cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
+
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y] == True:
@@ -51,7 +65,7 @@ def draw_grid(): #draws every cell
                 blue = g_motion[x][y]*length/2
                 
                 yshift = -blue+green/2+red/2
-                xshift = green*math.cos(math.pi/6)-red*math.cos(math.pi/6)
+                xshift = green*cos30-red*cos30
 
                 c.create_rectangle(centerx+xshift-1,centery+yshift-1,centerx+xshift+1,centery+yshift+1,fill=cellcolor, outline='', tag='dot')
 
@@ -60,18 +74,14 @@ def draw_grid(): #draws every cell
 def step_grid(countdown): #calculations for behavior of every cell
     for x in range(0, g_cols):
         for y in range(0, g_rows):
-            #laser beam
-            if laserbeam == True and x > g_cols/2 and int((countdown/20 % g_rows)/3) == int(y/3):
-                g_alive[x][y] = False
-
             if g_alive[x][y]:
                 #get energy from the sun
                 g_energy[x][y] += 0.1 * curve(g_diet[x][y])
                 #lose energy
                 g_energy[x][y] -= 0.08 * curve(g_power[x][y])
                 #die from an accident
-                if random.random() > 0.999:
-                    g_alive[x][y] = 0
+                if random.random() > 0.998:
+                    g_alive[x][y] = False
                 #movement
                 if g_energy[x][y] > 0.2:
                     pick = random.choice(NEIGHBOURLIST)
@@ -101,9 +111,9 @@ def step_grid(countdown): #calculations for behavior of every cell
                         if g_alive[ox][oy] == False:
                             g_alive[ox][oy] = True
                             g_energy[ox][oy] = 0.3
-                            g_diet[ox][oy]   = mutate(g_diet[x][y],0.02)
-                            g_motion[ox][oy] = mutate(g_motion[x][y],0.02)
-                            g_power[ox][oy]  = mutate(g_power[x][y],0.02)             
+                            g_diet[ox][oy]   = mutate(g_diet[x][y],0.01)
+                            g_motion[ox][oy] = mutate(g_motion[x][y],0.01)
+                            g_power[ox][oy]  = mutate(g_power[x][y],0.01)             
                             g_energy[x][y] -= 0.3
                 #death
                 if g_energy[x][y] > 1:
