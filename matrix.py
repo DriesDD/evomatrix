@@ -1,54 +1,63 @@
 import Tkinter
 import sched, time, random, math
+import numpy as np
 
-g_cols, g_rows = 50,50
-g_alive   = [[False for x in range(g_cols)] for y in range(g_rows)]
-g_energy  = [[0 for x in range(g_cols)] for y in range(g_rows)]
-g_motion  = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
-g_diet    = [[0.8 for x in range(g_cols)] for y in range(g_rows)]
-g_power   = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
-tps = 1000
-fps = 30
+#create matrices
+M_COLS, M_ROWS = 100,100
+m_alive   = np.zeros((M_COLS,M_ROWS),dtype=np.bool)
+m_energy  = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+m_power   = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+m_diet    = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+m_motion  = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+#x and y are the planar positions, while z are the properties energy,power,diet,motion
+m_cells   = np.zeros((M_COLS,M_ROWS,4),dtype=np.int8)
 
-MUTATION_RATE = 0.01
-DISRUPTION_RATE = 0.001
-AUTOTROPH_RATE = 0.09
-ENERGYLOSS_RATE = 0.08
-MOVEMENT_COST = 0.06
-ACTIVE_TRESHOLD = 0.2
-FIGHTING_MODIFIER = 0.6
-REPRODUCE_TRESHOLD = 0.8
-OFFSPRING_ENERGY = 0.4
+TPS = 1000
+FPS = 30
+
+MUTATION_RATE = 1
+DISRUPTION_RATE = 0.1
+AUTOTROPH_RATE = 9
+ENERGYLOSS_RATE = 8
+MOVEMENT_COST = 6
+ACTIVE_TRESHOLD = 20
+FIGHTING_MODIFIER = 60
+REPRODUCE_TRESHOLD = 80
+OFFSPRING_ENERGY = 40
 
 root = Tkinter.Tk()
 
-g_alive[int(g_cols/2)][int(g_rows/2)] = True
-g_energy[int(g_cols/2)][int(g_rows/2)] = 0.8
+m_alive[int(M_COLS/2)][int(M_ROWS/2)] = True
+m_energy[int(M_COLS/2)][int(M_ROWS/2)] = 80
+m_motion[int(M_COLS/2)][int(M_ROWS/2)] = 50
+m_diet[int(M_COLS/2)][int(M_ROWS/2)] = 80
+m_power[int(M_COLS/2)][int(M_ROWS/2)] = 50
+
 NEIGHBOURLIST = [[+1,0],[+1,+1],[0,+1],[-1,+1],[-1,0],[-1,-1],[0,-1],[+1,-1]]
 
-def curve(num): # helper function to map floats from 0 to 1 from a linear to a curve
-    return (math.cos(math.pi+math.pi*num)/2 + 0.5)
+def curve(num): # helper function to map int8s from 0 to 100 from a linear to a curve
+    return (100*math.cos(math.pi+math.pi*num/100)/2 + 0.5)
 
-def floattohex(input): #helper function to map numbers from 0 to 1 to hex values from 1 to f
-    return str(hex(int(16*input-1)).split('x')[-1])
+def floattohex(input): #helper function to map int8s from 0 to 100 to hex values from 1 to f
+    return str(hex(int(16*(input/100)-1)).split('x')[-1])
 
 def mutate(n):
     s = MUTATION_RATE
     if random.random() > 1-5*s:
-        return max(0, min(1, random.gauss(n,s*10)))
-    return max(0, min(1, random.gauss(n,s)))
+        return max(0, min(100, random.gauss(n,s*10)))
+    return max(0, min(100, random.gauss(n,s)))
 
 def draw_grid(): #draws every cell
     w = c.winfo_width()
     h = c.winfo_height()
-    cs = min(w/g_cols,h/g_rows)
+    cs = min(w/M_COLS,h/M_ROWS)
     c.delete('cell')
     c.delete('dot')
     c.delete('line')
     length = 300
     cos30 = math.cos(math.pi/6)
     sin30 = math.sin(math.pi/6)
-    centerx = cs*g_cols+length/2
+    centerx = cs*M_COLS+length/2
     centery = h/2
     c.create_line(centerx,centery,centerx,centery-length/2,fill="grey20",tag='line')
     c.create_line(centerx,centery,centerx+cos30*length/2,centery+sin30*length/2,fill="grey20",tag='line')
@@ -63,8 +72,8 @@ def draw_grid(): #draws every cell
     c.create_line(centerx-cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
     c.create_line(centerx+cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
 
-    for x in range(0, g_cols):
-        for y in range(0, g_rows):
+    for x in range(0, M_COLS):
+        for y in range(0, M_ROWS):
             if g_alive[x][y] == True:
                 trim = (cs-(cs*math.sqrt(max(0,g_energy[x][y]))))/2
                 cellcolor = '#' + floattohex(g_power[x][y]) + floattohex(g_diet[x][y]) + floattohex(g_motion[x][y])
@@ -83,8 +92,8 @@ def draw_grid(): #draws every cell
     root.after(1000/fps, draw_grid)
 
 def step_grid(stepcount): #calculations for behavior of every cell
-    for x in range(0, g_cols):
-        for y in range(0, g_rows):
+    for x in range(0, M_COLS):
+        for y in range(0, M_ROWS):
             if g_alive[x][y]:
                 #get energy from the sun
                 g_energy[x][y] += AUTOTROPH_RATE * curve(g_diet[x][y])
@@ -94,12 +103,12 @@ def step_grid(stepcount): #calculations for behavior of every cell
                 if random.random() > 1-DISRUPTION_RATE:
                     g_alive[x][y] = False
                     for each in NEIGHBOURLIST:
-                        g_alive[(x+each[0]) % g_cols][(y+each[1]) % g_rows] = False
+                        g_alive[(x+each[0]) % M_COLS][(y+each[1]) % M_ROWS] = False
                 #movement
                 if g_energy[x][y] > ACTIVE_TRESHOLD:
                     pick = random.choice(NEIGHBOURLIST)
-                    ox = int(x+pick[0]) % g_cols
-                    oy = int(y+pick[1]) % g_rows
+                    ox = int(x+pick[0]) % M_COLS
+                    oy = int(y+pick[1]) % M_ROWS
                     if random.random() < curve(g_motion[x][y]):
                         g_energy[x][y] -= MOVEMENT_COST
                         if g_alive[ox][oy] == False:
@@ -119,8 +128,8 @@ def step_grid(stepcount): #calculations for behavior of every cell
                 #reproduce
                     if g_energy[x][y] > REPRODUCE_TRESHOLD:
                         pick = random.choice(NEIGHBOURLIST)
-                        ox = int(x+pick[0]) % g_cols
-                        oy = int(y+pick[1]) % g_rows
+                        ox = int(x+pick[0]) % M_COLS
+                        oy = int(y+pick[1]) % M_ROWS
                         if g_alive[ox][oy] == False:
                             g_alive[ox][oy] = True
                             g_energy[ox][oy] = OFFSPRING_ENERGY
