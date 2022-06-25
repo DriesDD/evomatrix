@@ -1,3 +1,4 @@
+#WIP. The goal here is to rewrite the code with numpy matrices for better performance
 import Tkinter
 import sched, time, random, math
 import numpy as np

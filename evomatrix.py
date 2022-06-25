@@ -1,20 +1,20 @@
 import Tkinter
 import sched, time, random, math
 
-g_cols, g_rows = 50,50
+g_cols, g_rows = 32,32
 g_alive   = [[False for x in range(g_cols)] for y in range(g_rows)]
 g_energy  = [[0 for x in range(g_cols)] for y in range(g_rows)]
-g_motion  = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
-g_diet    = [[0.8 for x in range(g_cols)] for y in range(g_rows)]
+g_motion  = [[0.3 for x in range(g_cols)] for y in range(g_rows)]
+g_diet    = [[0.4 for x in range(g_cols)] for y in range(g_rows)]
 g_power   = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
-tps = 1000
-fps = 30
+tps = 100
+fps = 100
 
 MUTATION_RATE = 0.01
-DISRUPTION_RATE = 0.001
-AUTOTROPH_RATE = 0.09
-ENERGYLOSS_RATE = 0.08
-MOVEMENT_COST = 0.06
+DISRUPTION_RATE = 0.0001
+AUTOTROPH_RATE = 0.07
+ENERGYLOSS_RATE = 0.035
+MOVEMENT_COST = 0.048
 ACTIVE_TRESHOLD = 0.2
 FIGHTING_MODIFIER = 0.6
 REPRODUCE_TRESHOLD = 0.8
