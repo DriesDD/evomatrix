@@ -1,7 +1,7 @@
 # evomatrix
 Personal project which simulates speciation through natural selection using python.
 
-`Python evomatrix.py` to run.
+`Python3 evomatrix.py` to run.
 Resize window to see 3D scatterplot of genetic variation.
 Presets (global constants) can be changed in the code.
 TPS (ticks/steps per second) and FPS (frames/renders per second) can be changed for better visual performance or simulation speed.
