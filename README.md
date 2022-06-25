@@ -5,6 +5,7 @@ Personal project which simulates speciation through natural selection using pyth
 Resize window to see 3D scatterplot of genetic variation.
 Presets (global constants) can be changed in the code.
 TPS (ticks/steps per second) and FPS (frames/renders per second) can be changed for better visual performance or simulation speed.
+An article about this can be found here: https://www.dries.page/life
 
 ## How it works:
  - A grid is created. In the beginning Every cell (the little squares) is empty except for the central cell.
