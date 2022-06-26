@@ -94,7 +94,7 @@ def step():
     for iy, ix in np.ndindex(SHAPE):
         if bool(g_alive[iy][ix]):
             cell_energy = g_energy[iy][ix]
-
+            cell_energy_start = cell_energy
             part_counter = perf_counter()
             subpart_counter = perf_counter()
             #get energy from the sun and lose energy at a constant rate. Calculate every 5 steps for performance reasons.
@@ -103,7 +103,6 @@ def step():
                 if new_energy < 0:
                     g_alive[iy][ix] = False
                 else:
-                    g_energy[iy][ix] = new_energy
                     cell_energy = new_energy
             endsubpart_counter = perf_counter()
             energy += subpart_counter - endsubpart_counter
@@ -119,7 +118,7 @@ def step():
             part_counter = perf_counter()
             #movement
             y,x = iy,ix
-            if cell_energy > ACTIVE_TRESHOLD and bool(g_alive[iy][ix]) == True:
+            if cell_energy > ACTIVE_TRESHOLD:
                 subpart_counter = perf_counter()
                 motion_counter = perf_counter()
                 rand_counter = perf_counter()
@@ -128,7 +127,6 @@ def step():
                 rand += endrand_counter - rand_counter
                 if a:
                     pick = NEIGHBOUR_LIST[RNG8[rng_i()]]
-                    g_energy[iy][ix] -= MOVEMENT_COST
                     cell_energy -= MOVEMENT_COST
                     oy = int(iy+pick[1]) % GRID_SIZE
                     ox = int(ix+pick[0]) % GRID_SIZE
@@ -148,9 +146,9 @@ def step():
                         fight_counter = perf_counter()
                         if int(g_energy[oy][ox]) < 256*(curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(g_power[oy][ox])):
                             g_alive[oy][ox] = False
-                            g_energy[iy][ix] += min(int(g_energy[oy][ox]),256*((curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy][ox]))) * (1-curve(g_diet[iy][ix]))))
+                            cell_energy += min(int(g_energy[oy][ox]),256*((curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy][ox]))) * (1-curve(g_diet[iy][ix]))))
                         else:
-                            g_energy[iy][ix] += min(int(g_energy[oy][ox]),256*((curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy][ox]))) * (1-curve(g_diet[iy][ix]))))
+                            cell_energy += min(int(g_energy[oy][ox]),256*((curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy][ox]))) * (1-curve(g_diet[iy][ix]))))
                             g_energy[oy][ox] -= 256*(curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(g_power[oy][ox]))
                         endfight_counter = perf_counter()
                         fight += endfight_counter - fight_counter
@@ -169,7 +167,6 @@ def step():
                             g_diet[oy][ox]   = mutate(g_diet[iy][ix])
                             g_motion[oy][ox] = mutate(g_motion[iy][ix])
                             g_power[oy][ox]  = mutate(g_power[iy][ix])             
-                            g_energy[iy][ix] -= OFFSPRING_ENERGY
                             cell_energy -= OFFSPRING_ENERGY
                             break
                 endsubsubpart_counter = perf_counter()
@@ -181,9 +178,12 @@ def step():
             part_counter = perf_counter()
             #death
             if cell_energy > 255:
-                g_energy[y][x] = 255
+                cell_energy = 255
             elif cell_energy <= 0:
                 g_alive[y][x] = False
+            #applyy energy difference
+            if cell_energy != cell_energy_start:
+                g_energy[iy][ix] = cell_energy
             endpart_counter = perf_counter()
             aftermovement += part_counter - endpart_counter
     end_time = perf_counter()
