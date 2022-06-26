@@ -6,8 +6,8 @@ from time import perf_counter
 #constants (configurable)
 GRID_SIZE = 64
 SCALE = 20
-FPS = 30
-SPF = 4 #steps per frame
+FPS = 100
+SPF = 1 #steps per frame
 MUTATION_RATE = 0.01
 DISRUPTION_RATE = 0.0001
 AUTOTROPH_RATE = 9
@@ -50,7 +50,7 @@ surface = pg.Surface(SHAPE)
 
 #helper functions
 def curve(num): # helper function to map ints from 0 to 1 from a linear to a curve
-    a = (math.cos(math.pi+math.pi*(int(num)/256))/2 + 0.5)
+    a = math.cos(math.pi+math.pi*(int(num)/256))/2 + 0.5 #cosine curve
     return a
 
 def mutate(n): #mutates the value slightly, fat tail gauss curve
@@ -123,7 +123,7 @@ def step():
                     g_energy[iy,ix] -= MOVEMENT_COST
                     oy = int(iy+pick[1]) % GRID_SIZE
                     ox = int(ix+pick[0]) % GRID_SIZE
-                    if g_alive[oy,ox] == False:
+                    if bool(g_alive[oy,ox]) == False:
                         #actuallymoving_counter = perf_counter()
                         g_energy[oy,ox] = g_energy[iy,ix]
                         g_diet[oy,ox] = g_diet[iy,ix]
