@@ -1,20 +1,22 @@
 #WIP. The goal here is to rewrite the code with numpy matrices for better performance
 import Tkinter
-import sched, time, random, math
+import random, math
 import numpy as np
+from time import perf_counter
+
 
 #create matrices
-M_COLS, M_ROWS = 100,100
-m_alive   = np.zeros((M_COLS,M_ROWS),dtype=np.bool)
-m_energy  = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
-m_power   = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
-m_diet    = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
-m_motion  = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+M_COLS, M_ROWS = 32,32
+g_alive   = np.zeros((M_COLS,M_ROWS),dtype=np.bool)
+g_energy  = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+g_power   = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+g_diet    = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
+g_motion  = np.zeros((M_COLS,M_ROWS),dtype=np.int8)
 #x and y are the planar positions, while z are the properties energy,power,diet,motion
-m_cells   = np.zeros((M_COLS,M_ROWS,4),dtype=np.int8)
+g_cells   = np.zeros((M_COLS,M_ROWS,4),dtype=np.int8)
 
-TPS = 1000
-FPS = 30
+TPS = 200
+FPS = 200
 
 MUTATION_RATE = 1
 DISRUPTION_RATE = 0.1
@@ -28,11 +30,11 @@ OFFSPRING_ENERGY = 40
 
 root = Tkinter.Tk()
 
-m_alive[int(M_COLS/2)][int(M_ROWS/2)] = True
-m_energy[int(M_COLS/2)][int(M_ROWS/2)] = 80
-m_motion[int(M_COLS/2)][int(M_ROWS/2)] = 50
-m_diet[int(M_COLS/2)][int(M_ROWS/2)] = 80
-m_power[int(M_COLS/2)][int(M_ROWS/2)] = 50
+g_alive[int(M_COLS/2)][int(M_ROWS/2)] = True
+g_energy[int(M_COLS/2)][int(M_ROWS/2)] = 80
+g_motion[int(M_COLS/2)][int(M_ROWS/2)] = 50
+g_diet[int(M_COLS/2)][int(M_ROWS/2)] = 80
+g_power[int(M_COLS/2)][int(M_ROWS/2)] = 50
 
 NEIGHBOURLIST = [[+1,0],[+1,+1],[0,+1],[-1,+1],[-1,0],[-1,-1],[0,-1],[+1,-1]]
 
@@ -73,6 +75,7 @@ def draw_grid(): #draws every cell
     c.create_line(centerx-cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
     c.create_line(centerx+cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
 
+    start_time = perf_counter()
     for x in range(0, M_COLS):
         for y in range(0, M_ROWS):
             if g_alive[x][y] == True:
@@ -91,8 +94,11 @@ def draw_grid(): #draws every cell
                 c.create_rectangle(centerx+xshift-1,centery+yshift-1,centerx+xshift+1,centery+yshift+1,fill=cellcolor, outline='', tag='dot')
 
     root.after(1000/fps, draw_grid)
+    end_time = perf_counter()
+    print(f"Draw Time: {end_time - start_time:0.6f}" )
 
 def step_grid(stepcount): #calculations for behavior of every cell
+    start_time = perf_counter()
     for x in range(0, M_COLS):
         for y in range(0, M_ROWS):
             if g_alive[x][y]:
@@ -145,6 +151,9 @@ def step_grid(stepcount): #calculations for behavior of every cell
                     g_alive[x][y] = False
     if stepcount/1000 % 1 == 0:
         print(str(stepcount) +' ticks.')
+        
+    end_time = perf_counter()
+    print(f"Step Time: {end_time - start_time:0.6f}" )
     root.after(1000/tps, step_grid, stepcount+1)
 
 root.after(0, step_grid, 0.0)

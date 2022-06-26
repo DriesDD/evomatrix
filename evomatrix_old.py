@@ -1,5 +1,5 @@
 import Tkinter
-import sched, time, random, math
+import random, math, time
 
 g_cols, g_rows = 32,32
 g_alive   = [[False for x in range(g_cols)] for y in range(g_rows)]
@@ -7,8 +7,8 @@ g_energy  = [[0 for x in range(g_cols)] for y in range(g_rows)]
 g_motion  = [[0.3 for x in range(g_cols)] for y in range(g_rows)]
 g_diet    = [[0.4 for x in range(g_cols)] for y in range(g_rows)]
 g_power   = [[0.2 for x in range(g_cols)] for y in range(g_rows)]
-tps = 100
-fps = 100
+tps = 200
+fps = 200
 
 MUTATION_RATE = 0.01
 DISRUPTION_RATE = 0.0001
@@ -63,6 +63,7 @@ def draw_grid(): #draws every cell
     c.create_line(centerx-cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
     c.create_line(centerx+cos30*length/2,centery-sin30*length/2,centerx,centery-length/2,fill="blue",tag='line')
 
+    start_time = time.time()
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y] == True:
@@ -79,10 +80,12 @@ def draw_grid(): #draws every cell
                 xshift = green*cos30-red*cos30
 
                 c.create_rectangle(centerx+xshift-1,centery+yshift-1,centerx+xshift+1,centery+yshift+1,fill=cellcolor, outline='', tag='dot')
-
+    end_time = time.time()
+    print("Draw Time: " + str(end_time - start_time) )
     root.after(1000/fps, draw_grid)
 
 def step_grid(stepcount): #calculations for behavior of every cell
+    start_time = time.time()
     for x in range(0, g_cols):
         for y in range(0, g_rows):
             if g_alive[x][y]:
@@ -135,6 +138,8 @@ def step_grid(stepcount): #calculations for behavior of every cell
                     g_alive[x][y] = False
     if stepcount/1000 % 1 == 0:
         print(str(stepcount) +' ticks.')
+    end_time = time.time()
+    print("Step Time: " + str(end_time - start_time) )
     root.after(1000/tps, step_grid, stepcount+1)
 
 root.after(0, step_grid, 0.0)

@@ -6,7 +6,7 @@ from time import perf_counter
 #constants (configurable)
 GRID_SIZE = 32
 SCALE = 20
-FPS = 200
+FPS = 400
 SPF = 1 #steps per frame
 MUTATION_RATE = 0.01
 DISRUPTION_RATE = 0.0001
@@ -26,7 +26,6 @@ RNG1 = np.arange(0, 1, 0.01)
 RNG8 = np.arange(0, 100, 1)
 for i in RNG8:
     RNG8[i] = RNG8[i]//(100/8)
-print(RNG8)
 np.random.shuffle(RNG1)
 np.random.shuffle(RNG8)
 RNG1 = RNG1.tolist()
@@ -34,18 +33,18 @@ RNG8 = RNG8.tolist()
 rngi = 0
 
 #create grids
-g_alive = np.zeros(SHAPE, dtype=np.bool)
-g_energy = np.zeros(SHAPE, dtype=np.uint8)
-g_motion = np.zeros(SHAPE, dtype=np.uint8)
-g_diet = np.zeros(SHAPE, dtype=np.uint8)
-g_power = np.zeros(SHAPE, dtype=np.uint8)
+g_alive =  [[False for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
+g_energy = [[0 for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
+g_motion = [[0 for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
+g_diet =   [[0 for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
+g_power =  [[0 for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
 
 #create first life
-g_alive[(GRID_SIZE-1)//2,(GRID_SIZE-1)//2] = True
-g_energy[(GRID_SIZE-1)//2,(GRID_SIZE-1)//2] = 128
-g_motion[(GRID_SIZE-1)//2,(GRID_SIZE-1)//2] = 20
-g_diet[(GRID_SIZE-1)//2,(GRID_SIZE-1)//2] = 154
-g_power[(GRID_SIZE-1)//2,(GRID_SIZE-1)//2] = 77
+g_alive[(GRID_SIZE-1)//2][(GRID_SIZE-1)//2] = True
+g_energy[(GRID_SIZE-1)//2][(GRID_SIZE-1)//2] = 128
+g_motion[(GRID_SIZE-1)//2][(GRID_SIZE-1)//2] = 20
+g_diet[(GRID_SIZE-1)//2][(GRID_SIZE-1)//2] = 154
+g_power[(GRID_SIZE-1)//2][(GRID_SIZE-1)//2] = 77
 
 #create canvas
 pg.display.init()
@@ -77,8 +76,8 @@ def draw():
     #paint life on canvas
     pg.draw.rect(surface,'black',pg.Rect(0,0,GRID_SIZE,GRID_SIZE))
     for iy, ix in np.ndindex(SHAPE):
-        if bool(g_alive[iy,ix]) == True:
-            surface.set_at((iy,ix),pg.Color(int(g_power[iy,ix]),int(g_diet[iy,ix]),int(g_motion[iy,ix])))
+        if bool(g_alive[iy][ix]) == True:
+            surface.set_at((iy,ix),pg.Color(int(g_power[iy][ix]),int(g_diet[iy][ix]),int(g_motion[iy][ix])))
 
     #refresh canvas
     scaledsurface = pg.transform.scale(surface,DISP_SHAPE)
@@ -88,26 +87,27 @@ def draw():
     print(f"Draw Time: {end_time - start_time:0.6f}" )
 
 #step
+
 def step():
     start_time = perf_counter()
     #beforemovement, movement, movementloop, aftermovement,energy,chance,fight,motion,reproduce,actuallymoving,rand = 0,0,0,0,0,0,0,0,0,0,0
     for iy, ix in np.ndindex(SHAPE):
-        if g_alive[iy,ix]:
+        if bool(g_alive[iy][ix]):
             #part_counter = perf_counter()
             #subpart_counter = perf_counter()
             #get energy from the sun and lose energy at a constant rate. Calculate every 5 steps for performance reasons.
             if (step_count + iy) % 5 == 0:
-                new_energy = int(g_energy[iy,ix]) + 5*(AUTOTROPH_RATE * curve(g_diet[iy,ix]) - ENERGYLOSS_RATE * curve(g_power[iy,ix]))
+                new_energy = int(g_energy[iy][ix]) + 5*(AUTOTROPH_RATE * curve(g_diet[iy][ix]) - ENERGYLOSS_RATE * curve(g_power[iy][ix]))
                 if new_energy < 0:
-                    g_alive[iy,ix] = False
+                    g_alive[iy][ix] = False
                 else:
-                    g_energy[iy,ix] = new_energy
+                    g_energy[iy][ix] = new_energy
             #die from an accident
             #endsubpart_counter = perf_counter()
             #energy += subpart_counter - endsubpart_counter
             #subpart_counter = perf_counter()
             if RNG1[rng_i()] > 1-DISRUPTION_RATE:
-                g_alive[iy,ix] = False
+                g_alive[iy][ix] = False
                 for each in NEIGHBOUR_LIST:
                     g_alive[(iy+each[1]) % GRID_SIZE,(ix+each[0]) % GRID_SIZE] = False
             #endsubpart_counter = perf_counter()
@@ -117,56 +117,56 @@ def step():
             #part_counter = perf_counter()
             #movement
             y,x = iy,ix
-            if int(g_energy[iy,ix]) > ACTIVE_TRESHOLD and bool(g_alive[iy,ix]) == True:
+            if int(g_energy[iy][ix]) > ACTIVE_TRESHOLD and bool(g_alive[iy][ix]) == True:
                 #subpart_counter = perf_counter()
                 #motion_counter = perf_counter()
                 #rand_counter = perf_counter()
-                a = bool(curve(g_motion[iy,ix]) > RNG1[rng_i()])
+                a = bool(curve(g_motion[iy][ix]) > RNG1[rng_i()])
                 #endrand_counter = perf_counter()
                 #rand += endrand_counter - rand_counter
                 if a:
                     pick = NEIGHBOUR_LIST[RNG8[rng_i()]]
-                    g_energy[iy,ix] -= MOVEMENT_COST
+                    g_energy[iy][ix] -= MOVEMENT_COST
                     oy = int(iy+pick[1]) % GRID_SIZE
                     ox = int(ix+pick[0]) % GRID_SIZE
-                    if bool(g_alive[oy,ox]) == False:
+                    if bool(g_alive[oy][ox]) == False:
                         #actuallymoving_counter = perf_counter()
-                        g_energy[oy,ox] = g_energy[iy,ix]
-                        g_diet[oy,ox] = g_diet[iy,ix]
-                        g_motion[oy,ox] = g_motion[iy,ix]
-                        g_power[oy,ox] = g_power[iy,ix]
-                        g_alive[iy,ix] = False
-                        g_alive[oy,ox] = True
+                        g_energy[oy][ox] = g_energy[iy][ix]
+                        g_diet[oy][ox] = g_diet[iy][ix]
+                        g_motion[oy][ox] = g_motion[iy][ix]
+                        g_power[oy][ox] = g_power[iy][ix]
+                        g_alive[iy][ix] = False
+                        g_alive[oy][ox] = True
                         y,x = oy,ox
                         #endactuallymoving_counter = perf_counter()
                         #actuallymoving += endactuallymoving_counter - actuallymoving_counter
             #fight and eat instead of moving if the goal has a live cell
                     else:
                         #fight_counter = perf_counter()
-                        if int(g_energy[oy,ox]) < 256*(curve(g_power[iy,ix]) - FIGHTING_MODIFIER*curve(g_power[oy,ox])):
-                            g_alive[oy,ox] = False
-                            g_energy[iy,ix] += min(int(g_energy[oy,ox]),256*((curve(g_power[iy,ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy,ox]))) * (1-curve(g_diet[iy,ix]))))
+                        if int(g_energy[oy][ox]) < 256*(curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(g_power[oy][ox])):
+                            g_alive[oy][ox] = False
+                            g_energy[iy][ix] += min(int(g_energy[oy][ox]),256*((curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy][ox]))) * (1-curve(g_diet[iy][ix]))))
                         else:
-                            g_energy[iy,ix] += min(int(g_energy[oy,ox]),256*((curve(g_power[iy,ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy,ox]))) * (1-curve(g_diet[iy,ix]))))
-                            g_energy[oy,ox] -= 256*(curve(g_power[iy,ix]) - FIGHTING_MODIFIER*curve(g_power[oy,ox]))
+                            g_energy[iy][ix] += min(int(g_energy[oy][ox]),256*((curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(int(g_power[oy][ox]))) * (1-curve(g_diet[iy][ix]))))
+                            g_energy[oy][ox] -= 256*(curve(g_power[iy][ix]) - FIGHTING_MODIFIER*curve(g_power[oy][ox]))
                         #endfight_counter = perf_counter()
                         #fight += endfight_counter - fight_counter
                 #endmotion_counter = perf_counter()
                 #motion += endmotion_counter - motion_counter
             #reproduce
                 #subsubpart_counter = perf_counter()
-                if g_energy[iy,ix] > REPRODUCE_TRESHOLD:
+                if g_energy[iy][ix] > REPRODUCE_TRESHOLD:
                     for i in [1,2,3]:
                         pick = NEIGHBOUR_LIST[RNG8[rng_i()]]
                         ox = int(ix+pick[0]) % GRID_SIZE
                         oy = int(iy+pick[1]) % GRID_SIZE
-                        if bool(g_alive[oy,ox]) == False or i == 3:
-                            g_alive[oy,ox] = True
-                            g_energy[oy,ox] = OFFSPRING_ENERGY
-                            g_diet[oy,ox]   = mutate(g_diet[iy,ix])
-                            g_motion[oy,ox] = mutate(g_motion[iy,ix])
-                            g_power[oy,ox]  = mutate(g_power[iy,ix])             
-                            g_energy[iy,ix] -= OFFSPRING_ENERGY
+                        if bool(g_alive[oy][ox]) == False or i == 3:
+                            g_alive[oy][ox] = True
+                            g_energy[oy][ox] = OFFSPRING_ENERGY
+                            g_diet[oy][ox]   = mutate(g_diet[iy][ix])
+                            g_motion[oy][ox] = mutate(g_motion[iy][ix])
+                            g_power[oy][ox]  = mutate(g_power[iy][ix])             
+                            g_energy[iy][ix] -= OFFSPRING_ENERGY
                             break
                 #endsubsubpart_counter = perf_counter()
                 #reproduce = endsubsubpart_counter - subsubpart_counter
@@ -176,10 +176,10 @@ def step():
             #movement += part_counter - endpart_counter
             #part_counter = perf_counter()
             #death
-            if int(g_energy[y,x]) > 255:
-                g_energy[y,x] = 255
-            elif int(g_energy[y,x]) <= 0:
-                g_alive[y,x] = False
+            if int(g_energy[y][x]) > 255:
+                g_energy[y][x] = 255
+            elif int(g_energy[y][x]) <= 0:
+                g_alive[y][x] = False
             #endpart_counter = perf_counter()
             #aftermovement += part_counter - endpart_counter
     end_time = perf_counter()
