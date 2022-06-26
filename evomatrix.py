@@ -4,9 +4,9 @@ import math, random
 from time import perf_counter
 
 #constants (configurable)
-GRID_SIZE = 64
+GRID_SIZE = 32
 SCALE = 20
-FPS = 100
+FPS = 200
 SPF = 1 #steps per frame
 MUTATION_RATE = 0.01
 DISRUPTION_RATE = 0.0001
@@ -22,9 +22,15 @@ OFFSPRING_ENERGY = 102
 SHAPE = (GRID_SIZE,GRID_SIZE)
 DISP_SHAPE = (GRID_SIZE*SCALE,GRID_SIZE*SCALE)
 NEIGHBOUR_LIST = [[+1,0],[+1,+1],[0,+1],[-1,+1],[-1,0],[-1,-1],[0,-1],[+1,-1]]
-RNG = np.arange(0, 1, 0.01)
-np.random.shuffle(RNG)
-print(RNG)
+RNG1 = np.arange(0, 1, 0.01)
+RNG8 = np.arange(0, 100, 1)
+for i in RNG8:
+    RNG8[i] = RNG8[i]//(100/8)
+print(RNG8)
+np.random.shuffle(RNG1)
+np.random.shuffle(RNG8)
+RNG1 = RNG1.tolist()
+RNG8 = RNG8.tolist()
 rngi = 0
 
 #create grids
@@ -55,7 +61,7 @@ def curve(num): # helper function to map ints from 0 to 1 from a linear to a cur
 
 def mutate(n): #mutates the value slightly, fat tail gauss curve
     s = MUTATION_RATE*256
-    if RNG[rng_i()] > 1-5*MUTATION_RATE:
+    if RNG1[rng_i()] > 1-5*MUTATION_RATE:
         return round(max(0, min(255, random.gauss(int(n),s*10))))
     return round(max(0, min(255, random.gauss(int(n),s))))
 
@@ -100,7 +106,7 @@ def step():
             #endsubpart_counter = perf_counter()
             #energy += subpart_counter - endsubpart_counter
             #subpart_counter = perf_counter()
-            if RNG[rng_i()] > 1-DISRUPTION_RATE:
+            if RNG1[rng_i()] > 1-DISRUPTION_RATE:
                 g_alive[iy,ix] = False
                 for each in NEIGHBOUR_LIST:
                     g_alive[(iy+each[1]) % GRID_SIZE,(ix+each[0]) % GRID_SIZE] = False
@@ -115,11 +121,11 @@ def step():
                 #subpart_counter = perf_counter()
                 #motion_counter = perf_counter()
                 #rand_counter = perf_counter()
-                a = bool(curve(g_motion[iy,ix]) > RNG[rng_i()])
+                a = bool(curve(g_motion[iy,ix]) > RNG1[rng_i()])
                 #endrand_counter = perf_counter()
                 #rand += endrand_counter - rand_counter
                 if a:
-                    pick = random.choice(NEIGHBOUR_LIST)
+                    pick = NEIGHBOUR_LIST[RNG8[rng_i()]]
                     g_energy[iy,ix] -= MOVEMENT_COST
                     oy = int(iy+pick[1]) % GRID_SIZE
                     ox = int(ix+pick[0]) % GRID_SIZE
@@ -151,7 +157,7 @@ def step():
                 #subsubpart_counter = perf_counter()
                 if g_energy[iy,ix] > REPRODUCE_TRESHOLD:
                     for i in [1,2,3]:
-                        pick = random.choice(NEIGHBOUR_LIST)
+                        pick = NEIGHBOUR_LIST[RNG8[rng_i()]]
                         ox = int(ix+pick[0]) % GRID_SIZE
                         oy = int(iy+pick[1]) % GRID_SIZE
                         if bool(g_alive[oy,ox]) == False or i == 3:
