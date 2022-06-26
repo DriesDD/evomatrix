@@ -93,15 +93,18 @@ def step():
     beforemovement, movement, movementloop, aftermovement,energy,chance,fight,motion,reproduce,actuallymoving,rand = 0,0,0,0,0,0,0,0,0,0,0
     for iy, ix in np.ndindex(SHAPE):
         if bool(g_alive[iy][ix]):
+            cell_energy = g_energy[iy][ix]
+
             part_counter = perf_counter()
             subpart_counter = perf_counter()
             #get energy from the sun and lose energy at a constant rate. Calculate every 5 steps for performance reasons.
             if (step_count + iy) % 5 == 0:
-                new_energy = int(g_energy[iy][ix]) + 5*(AUTOTROPH_RATE * curve(g_diet[iy][ix]) - ENERGYLOSS_RATE * curve(g_power[iy][ix]))
+                new_energy = cell_energy + 5*(AUTOTROPH_RATE * curve(g_diet[iy][ix]) - ENERGYLOSS_RATE * curve(g_power[iy][ix]))
                 if new_energy < 0:
                     g_alive[iy][ix] = False
                 else:
                     g_energy[iy][ix] = new_energy
+                    cell_energy = new_energy
             endsubpart_counter = perf_counter()
             energy += subpart_counter - endsubpart_counter
             subpart_counter = perf_counter()
@@ -116,21 +119,22 @@ def step():
             part_counter = perf_counter()
             #movement
             y,x = iy,ix
-            if int(g_energy[iy][ix]) > ACTIVE_TRESHOLD and bool(g_alive[iy][ix]) == True:
+            if cell_energy > ACTIVE_TRESHOLD and bool(g_alive[iy][ix]) == True:
                 subpart_counter = perf_counter()
                 motion_counter = perf_counter()
                 rand_counter = perf_counter()
-                a = bool(curve(g_motion[iy][ix]) > RNG1[rng_i()])
+                a = ( RNG1[rng_i()] < curve(g_motion[iy][ix]) )
                 endrand_counter = perf_counter()
                 rand += endrand_counter - rand_counter
                 if a:
                     pick = NEIGHBOUR_LIST[RNG8[rng_i()]]
                     g_energy[iy][ix] -= MOVEMENT_COST
+                    cell_energy -= MOVEMENT_COST
                     oy = int(iy+pick[1]) % GRID_SIZE
                     ox = int(ix+pick[0]) % GRID_SIZE
                     if bool(g_alive[oy][ox]) == False:
                         actuallymoving_counter = perf_counter()
-                        g_energy[oy][ox] = g_energy[iy][ix]
+                        g_energy[oy][ox] = cell_energy
                         g_diet[oy][ox] = g_diet[iy][ix]
                         g_motion[oy][ox] = g_motion[iy][ix]
                         g_power[oy][ox] = g_power[iy][ix]
@@ -154,7 +158,7 @@ def step():
                 motion += endmotion_counter - motion_counter
             #reproduce
                 subsubpart_counter = perf_counter()
-                if g_energy[iy][ix] > REPRODUCE_TRESHOLD:
+                if cell_energy > REPRODUCE_TRESHOLD:
                     for i in [1,2,3]:
                         pick = NEIGHBOUR_LIST[RNG8[rng_i()]]
                         ox = int(ix+pick[0]) % GRID_SIZE
@@ -166,18 +170,19 @@ def step():
                             g_motion[oy][ox] = mutate(g_motion[iy][ix])
                             g_power[oy][ox]  = mutate(g_power[iy][ix])             
                             g_energy[iy][ix] -= OFFSPRING_ENERGY
+                            cell_energy -= OFFSPRING_ENERGY
                             break
                 endsubsubpart_counter = perf_counter()
-                reproduce = endsubsubpart_counter - subsubpart_counter
+                reproduce += endsubsubpart_counter - subsubpart_counter
                 endsubpart_counter = perf_counter()
                 movementloop += subpart_counter - endsubpart_counter
             endpart_counter = perf_counter()
             movement += part_counter - endpart_counter
             part_counter = perf_counter()
             #death
-            if int(g_energy[y][x]) > 255:
+            if cell_energy > 255:
                 g_energy[y][x] = 255
-            elif int(g_energy[y][x]) <= 0:
+            elif cell_energy <= 0:
                 g_alive[y][x] = False
             endpart_counter = perf_counter()
             aftermovement += part_counter - endpart_counter
