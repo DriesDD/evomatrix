@@ -4,14 +4,14 @@ import math, random
 from time import perf_counter
 
 #constants (configurable)
-GRID_SIZE = 32
-SCALE = 20
-FPS = 400
+GRID_SIZE = 64
+SCALE = 12
+FPS = 1000
 SPF = 1 #steps per frame
 MUTATION_RATE = 0.01
-DISRUPTION_RATE = 0.0001
-AUTOTROPH_RATE = 9
-ENERGYLOSS_RATE = 6
+DISRUPTION_RATE = 0 #0.0001
+AUTOTROPH_RATE = 10
+ENERGYLOSS_RATE = 10 #7
 MOVEMENT_COST = 6
 ACTIVE_TRESHOLD = 51
 FIGHTING_MODIFIER = 0.9
@@ -107,10 +107,11 @@ def step():
             endsubpart_counter = perf_counter()
             energy += subpart_counter - endsubpart_counter
             subpart_counter = perf_counter()
-            if RNG1[rng_i()] > 1-DISRUPTION_RATE:
-                g_alive[iy][ix] = False
-                for each in NEIGHBOUR_LIST:
-                    g_alive[(iy+each[1]) % GRID_SIZE,(ix+each[0]) % GRID_SIZE] = False
+            if DISRUPTION_RATE > 0:
+                if RNG1[rng_i()] > 1-DISRUPTION_RATE:
+                    g_alive[iy][ix] = False
+                    for each in NEIGHBOUR_LIST:
+                        g_alive[(iy+each[1]) % GRID_SIZE,(ix+each[0]) % GRID_SIZE] = False
             endsubpart_counter = perf_counter()
             chance += subpart_counter - endsubpart_counter
             endpart_counter = perf_counter()
